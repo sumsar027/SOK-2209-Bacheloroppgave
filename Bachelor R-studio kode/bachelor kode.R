@@ -17,15 +17,6 @@ setwd("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave")
   library(scales)
   library(readr)
   library(PxWebApiData)
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Henting av datasett "SSB" innvandrere 
-
-# Få inn api spørring, dette er en annen fil enn den som er i github
-
-# https://data.ssb.no/api/v0/no/table/09817/
-
-# Andre https://www.ssb.no/befolkning/innvandrere/statistikk/innvandrere-og-norskfodte-med-innvandrerforeldre
-# bare for 2023;(
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Henting av datasett "Our World in Data, Trust in Europa" og "Our World in Data, Trust in Government"
