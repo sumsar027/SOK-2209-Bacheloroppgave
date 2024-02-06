@@ -1,8 +1,11 @@
 # Ulike datasett som er tatt med i oppgaven er lagt inn i github repo "https://github.com/sumsar027/SOK-2209-Bacheloroppgave"
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Setter rstudio norske bokstaver
 Sys.setlocale(locale="no_NO")
+
+# Legger inn working directory 
+setwd("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave")
 
 # Nedlastning av pakker
   library(ggplot2)
@@ -12,16 +15,23 @@ Sys.setlocale(locale="no_NO")
   library(ineq)
   library(lubridate)
   library(scales)
+  library(readr)
+  library(PxWebApiData)
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Henting av datasett "SSB" innvandrere 
 
-  # Pakker for kart av Europa
-    library(rnaturalearth)
-    library(sf)
-    library(wbstats)
+# Få inn api spørring, dette er en annen fil enn den som er i github
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# https://data.ssb.no/api/v0/no/table/09817/
+
+# Andre https://www.ssb.no/befolkning/innvandrere/statistikk/innvandrere-og-norskfodte-med-innvandrerforeldre
+# bare for 2023;(
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Henting av datasett "Our World in Data, Trust in Europa" og "Our World in Data, Trust in Government"
-trusteuropa <- read.csv("C:\\Users\\Eier\\Downloads\\interpersonal-trust-in-europe.csv")
-trustgovernment <- read.csv("C:\\Users\\Eier\\Downloads\\oecd-average-trust-in-governments.csv")
+trusteuropa <- read.csv("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave\\interpersonal-trust-in-europe.csv")
+trustgovernment <- read.csv("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave\\oecd-average-trust-in-governments.csv")
+
 
 # Henter ut land vi skal ha 
 
@@ -38,27 +48,41 @@ ggplot(trustgovernment, aes(x = Year, y = trust_government)) +
   scale_x_continuous(labels = number_format(accuracy = 1)) +
   theme_minimal()
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Henting av datasett "Norsk medborgerpanel runde 26"
 df <- read.csv("C:\\Users\\Eier\\Downloads\\2249\\Norsk medborgerpanel runde 26, 2023\\NSD3127.csv")
 df
 
 # Starter med å endre navn for enklere visuell forståelse
-df <- df %>% rename(sivilstatus = r26_bgciv, type_området = r26k2_bgurb, høyest_utdanning = r26P4_2,
+df <- df %>% rename(sivilstatus = r26_bgciv, type_området = r26k2_bgurb, høyest_utdanning = r26P4_1,
                       antall_barn = r26k2_bgchi, kjønn = r26P1, landsdel = r26P2, fylke = r26P3, 
                         fødselsår = r26P5_1, brutto_inntekt = r26k2_bginc, type_arbeid = r26_bgsct, 
                           tillit = r26_pccoo, politisk_tillit = r26_pccop, tillit_stortinget = r26_pccos, 
                             tillit_media = r26_pccom, vurdering_regjering = r26_pcsag,
                               vurdering_egenøkonomi = r26_pceco, interesse_politikk = r26_pcpin,
                                 vurdering_livet = r26_pcsal, investering_utdanning = r26k2_powpr_2, 
-                                  valg_parti = r26k2_pcpar, vurdering_demokrati = r26k2_pcsad)
+                                  valg_parti = r26k2_pcpar, vurdering_demokrati = r26k2_pcsad, 
+                                    trygghet_nær = r26_pcsaf, mening_innvandrere_bo = r26_pcimm, 
+                                      mening_innvandrere = r26_pcldi,
+                    
+                    innvandring1 = w01_k29, innvandring2 = w03_r3k29, innvandring3 = r4k29, innvandring4 = r5k29,
+                    innvandring5 = r11bk29, innvandring6 = r14bk29, innvandring7 = r16bk29, innvandring8 = r18bk29,
+                    innvandring9 = r22bk29, innvandring10 = r25_bgimm)
+
+
+# Fjerner rader med verdi 97 og 98 fra tillitsvariabelen
+
+df <- subset(df, !(tillit_stortinget %in% c(97, 98)))
 
 # Lager nytt datasett med de variablene vi skal bruke for en enklere visualisering 
 
-valgt_df = select(df, kjønn, fødselsår, sivilstatus, landsdel, fylke, høyest_utdanning,
+valgt_df = select(df, kjønn, fødselsår, sivilstatus, innvandring1, landsdel, fylke, høyest_utdanning,
                     brutto_inntekt, type_arbeid, vurdering_egenøkonomi, tillit, politisk_tillit, 
                       tillit_stortinget, tillit_media, vurdering_regjering, interesse_politikk, 
-                        valg_parti, vurdering_demokrati, vurdering_livet, investering_utdanning)
+                        valg_parti, vurdering_demokrati, vurdering_livet, investering_utdanning, 
+                          trygghet_nær, mening_innvandrere_bo, mening_innvandrere)
+
+
 
 # Lager en visuell beskrivelse av utdanning ved bruk av barplot 
 
@@ -76,4 +100,123 @@ utdanning1 <-
           border="lightblue",
           col=valgt_df$høyest_utdanning)
 
-# Lager en visuell beskrivelse av 
+# Lager en visuell beskrivelse av fødselsår
+
+fødselsår1 <- 
+  barplot(table(valgt_df$fødselsår),
+          names.arg=c("1959_og_før", "1960-1989", "1990=<", "1960-1969", "1970-1979", "1980-1989", "1990_og_etter"),
+                      las = 2,
+                      main = "Fødselsår",
+                      ylab = "Antall",
+                      border = "lightblue",
+                      col = valgt_df$fødselsår)
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Lager dummy variabler, bruker kodebok for å se svaralternativer
+
+# Dummy for kjønn 
+valgt_df$mann <- ifelse(valgt_df$kjønn == 1, 1, 0)
+
+# Dummy for alder 
+valgt_df <- valgt_df %>%
+  mutate(aldersgruppe = case_when(
+    fødselsår == 1 ~ '1939_og_før',
+    fødselsår == 2 ~ '1940-1949',
+    fødselsår == 3 ~ '1950-1959',
+    fødselsår == 4 ~ '1960-1969',
+    fødselsår == 5 ~ '1970-1979',
+    fødselsår == 6 ~ '1980-1989',
+    TRUE ~ '1990_og_etter'
+  )) %>%
+  mutate(aldersgruppe = factor(aldersgruppe, levels = 
+    c('1939_og_før', '1940-1949', '1950-1959', '1960-1969', '1970-1979', '1980-1989', '1990_og_etter')))
+
+# Dummy for sivilstatus
+
+# blir gift eller ikke der de andre alternativene blir satt til 0
+# Ser at variabelen har 97 og 98 som må bli fjernet 
+
+valgt_df <- valgt_df %>%
+  mutate(gift_samboer = case_when(
+    sivilstatus %in% c(97, 98) ~ NA_real_,
+    sivilstatus %in% c(1, 2, 5, 6, 7) ~ 0,
+    TRUE ~ 1
+  )) 
+
+# Dummy for utdanningsnivå 
+
+valgt_df <- valgt_df %>%
+  mutate(utdanning = factor(høyest_utdanning, 
+                            levels = c(1, 2, 3),
+                            labels = c("grunnskole", "videregående", "høyere"),
+                            exclude = 97)) %>%
+  mutate(utdanning = fct_relevel(utdanning, "høyere")) # sammenligningsnivå
+
+# Dummy for inntektsnivå 
+
+valgt_df <- valgt_df %>% 
+  mutate(inntekt = factor(brutto_inntekt,
+                          levels = c(1,2,3,4,5,6,7,8),
+                          labels = c("150_og_under", "150-300", "300-400", "400-500", 
+                                     "500-600", "600-700", "700-1000", "1000_og_mer"),
+                          exclude = c(97,98))) %>% 
+  mutate(inntekt = fct_relevel(inntekt, "300-400")) # sammenligningsnivå
+
+
+
+# Henter data for innvandring fra andre runder siden innvandringsstatusen endrer seg ikke over tid
+
+innvandring_data <- df %>%
+  dplyr::select(innvandring1, innvandring2, innvandring3, innvandring4, innvandring5, innvandring6, 
+innvandring7, innvandring8, innvandring9, innvandring10)
+
+innvandring_data <- innvandring_data %>%
+  mutate(innvandring = case_when(
+    innvandring1 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring2 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring3 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring4 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring5 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring6 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring7 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring8 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring9 %in% c(1, 3, 4, 5) ~ 0,
+    innvandring10 %in% c(1, 3, 4, 5) ~ 0,
+
+    TRUE ~ 1
+  ))
+
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Deskriptiv statistikk
+
+# (Må fikse innvandring, ikke tatt med her)
+
+rdf <- valgt_df %>% 
+  dplyr::select(tillit_stortinget, mann, aldersgruppe, gift_samboer, utdanning, inntekt)
+
+saveRDS(rdf, "rdf.rds")
+
+rdf <- readRDS("rdf.rds")
+
+# Beregner gjennomsnitt og standardavvik til tillit_stortinget
+tillit_gj <- mean(rdf$tillit_stortinget, na.rm = TRUE)
+tillit_sd <- sd(rdf$tillit_stortinget, na.rm = TRUE)
+
+
+cat("tillit - gjennomsnitt:", tillit_gj, "\n")
+cat("tillit standard avvik:", tillit_sd, "\n")
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Regresjonsanalyse
+
+rsa <- lm(tillit_stortinget ~ aldersgruppe + utdanning + mann + utdanning + inntekt + gift_samboer, data = rdf)
+
+summary(rsa)
+
+plot(rsa, main = "Model fit")
