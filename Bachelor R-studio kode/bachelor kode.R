@@ -81,10 +81,7 @@ par(mar=c(6,3,1,1))
 
 utdanning1 <- 
   barplot(table(valgt_df$høyest_utdanning), 
-          names.arg=c("Ingen","Grunnskole","VGS","VGS yrkesfaglig",
-                        "VGS påbygg", "Universitet/høgskole", "Høgskole 3-4",
-                          "Universitet 3-4", "Høgskole 5-6", "Universitet 5-6", "Forskernivå",
-                            "Annet", "Ikke svart"),
+          names.arg=c("Ingen/Grunnskole","VGS","Universitet/høgskole","Ikke svart"),
           las=2, 
           main="Høyeste utdanningsnivå",
           ylab="Antall",
@@ -95,7 +92,7 @@ utdanning1 <-
 
 fødselsår1 <- 
   barplot(table(valgt_df$fødselsår),
-          names.arg=c("1959_og_før", "1960-1989", "1990=<", "1960-1969", "1970-1979", "1980-1989", "1990_og_etter"),
+          names.arg=c("1939_og_før", "1940-1949", "1950-1959", "1960-1969", "1970-1979", "1980-1989", "1990_og_etter"),
                       las = 2,
                       main = "Fødselsår",
                       ylab = "Antall",
@@ -103,6 +100,25 @@ fødselsår1 <-
                       col = valgt_df$fødselsår)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Emperi for å finne referansegruppene 
+
+
+# Gjennomgang av variabler, referansegruppe;
+
+# Utdanning: Videregående eller høyere 
+# Inntekt: 150-300 
+# Sivilstatus: Ikke gift
+# Kjønn: Kvinne
+# Innvandring: Ikke innvandrer
+# Investering utdanning: Samme som nå
+
+
+summary(valgt_df)
+table(valgt_df$fødselsår)
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 # Lager dummy variabler, bruker kodebok for å se svaralternativer
 
@@ -135,14 +151,24 @@ valgt_df <- valgt_df %>%
     TRUE ~ 1
   )) 
 
-# Dummy for utdanningsnivå 
+# Dummy for utdanningsnivå, #mulig at det er bedre å bruke den andre utdanningsvariabelen
 
 valgt_df <- valgt_df %>%
   mutate(utdanning = factor(høyest_utdanning, 
                             levels = c(1, 2, 3),
-                            labels = c("grunnskole", "videregående", "høyere"),
+                            labels = c("Grunnskole", "Videregående", "Høyere"),
                             exclude = 97)) %>%
   mutate(utdanning = fct_relevel(utdanning, "høyere")) # sammenligningsnivå
+
+# Dummy for investering i utdanning
+
+valgt_df <- valgt_df %>% 
+  mutate(investering_utdanningD = factor(investering_utdanning,
+                            levels = c(1, 2, 3, 4, 5, 6),
+                            labels = c("Mye mindre", "Litt mindre", "Det samme", 
+                                       "Litt mer", "Mye mer", "Vet ikke"),
+                            exclude = c(97, 98))) %>% 
+  mutate(investering_utdanningD = fct_relevel(investering_utdanningD, "Det samme")) # sammenligningsnivå
 
 # Dummy for inntektsnivå 
 
@@ -162,8 +188,24 @@ innvandring_data <- df %>%
   dplyr::select(innvandring1, innvandring2, innvandring3, innvandring4, innvandring5, innvandring6, 
 innvandring7, innvandring8, innvandring9, innvandring10)
 
+# Kanskje prøve å gjøre om alle 97 og 98 til NA verdier før man setter opp dummy 
+innvandring_data <- innvandring_data %>% 
+  mutate()
+
+# Litt usikker her, alle blir NA 
 innvandring_data <- innvandring_data %>%
   mutate(innvandring = case_when(
+    innvandring1 %in% c(97, 98) ~ NA_real_, 
+    innvandring2 %in% c(97, 98) ~ NA_real_, 
+    innvandring3 %in% c(97, 98) ~ NA_real_, 
+    innvandring4 %in% c(97, 98) ~ NA_real_, 
+    innvandring5 %in% c(97, 98) ~ NA_real_, 
+    innvandring6 %in% c(97, 98) ~ NA_real_, 
+    innvandring7 %in% c(97, 98) ~ NA_real_, 
+    innvandring8 %in% c(97, 98) ~ NA_real_, 
+    innvandring9 %in% c(97, 98) ~ NA_real_, 
+    innvandring10 %in% c(97, 98) ~ NA_real_, 
+    
     innvandring1 %in% c(1, 3, 4, 5) ~ 0,
     innvandring2 %in% c(1, 3, 4, 5) ~ 0,
     innvandring3 %in% c(1, 3, 4, 5) ~ 0,
@@ -187,7 +229,8 @@ innvandring_data <- innvandring_data %>%
 # (Må fikse innvandring, ikke tatt med her)
 
 rdf <- valgt_df %>% 
-  dplyr::select(tillit_stortinget, mann, aldersgruppe, gift_samboer, utdanning, inntekt)
+  dplyr::select(tillit_stortinget, mann, aldersgruppe, gift_samboer, utdanning, 
+                investering_utdanningD, inntekt)
 
 saveRDS(rdf, "rdf.rds")
 
@@ -206,7 +249,8 @@ cat("tillit standard avvik:", tillit_sd, "\n")
 
 # Regresjonsanalyse
 
-rsa <- lm(tillit_stortinget ~ aldersgruppe + utdanning + mann + utdanning + inntekt + gift_samboer, data = rdf)
+rsa <- lm(tillit_stortinget ~ aldersgruppe + utdanning + mann + utdanning + 
+            investering_utdanningD + inntekt + gift_samboer, data = rdf)
 
 summary(rsa)
 
