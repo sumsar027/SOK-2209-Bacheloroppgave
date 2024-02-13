@@ -1,6 +1,7 @@
 # Ulike datasett som er tatt med i oppgaven er lagt inn i github repo "https://github.com/sumsar027/SOK-2209-Bacheloroppgave"
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # Setter rstudio norske bokstaver
 Sys.setlocale(locale="no_NO")
 
@@ -20,6 +21,7 @@ setwd("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave")
   library(naniar) # For å sette NA verdier, https://cran.r-project.org/web/packages/naniar/vignettes/replace-with-na.html
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # Henting av datasett "Our World in Data, Trust in Europa" og "Our World in Data, Trust in Government"
 trusteuropa <- read.csv("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave\\interpersonal-trust-in-europe.csv")
 trustgovernment <- read.csv("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave\\oecd-average-trust-in-governments.csv")
@@ -41,6 +43,21 @@ ggplot(trustgovernment, aes(x = Year, y = trust_government)) +
   theme_minimal()
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Henting av datasett "Trust in government" fra OECD (2024)
+
+oecdtrust <- read.csv("C:\\Users\\Eier\\Downloads\\Data for bacheloroppgave\\DP_LIVE_13022024235619732.csv")
+
+valgt_oecdtrust <- oecdtrust[oecdtrust$ï..LOCATION %in% c('NOR','SWE','DNK','FIN','FRA','DEU','ITA','POL','BGR'), ]
+
+ggplot(valgt_oecdtrust, aes(x = factor(TIME), y = Value, fill = ï..LOCATION)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "År", y = "Verdi", title = "Verdi per år for hvert land") +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # Henting av datasett "Norsk medborgerpanel runde 26"
 df <- read.csv("C:\\Users\\Eier\\Downloads\\2249\\Norsk medborgerpanel runde 26, 2023\\NSD3127.csv")
 df
@@ -126,8 +143,9 @@ antall_observasjoner(valgt_df)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
 # Lager dummy variabler, bruker kodebok for å se svaralternativer
+# Mulig at det er bedre å gjøre flere om til slik sivilstatus er gjort,
+# for enklere visning i regresjonsmodellene
 
 
 # Dummy for utdanningsnivå 
@@ -338,14 +356,28 @@ innvandring_data <- innvandring_data %>%
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# Regresjonsanalyse
+# Deskriptiv statistikk
 
 # Innvandring ikke tatt med, må fikses
+
+reduced_data <- valgt_df %>%
+  dplyr::select(tillit_stortinget, utdanning, inntekt, gift_samboer, mann, borgerskap,
+                aldersgruppe, arbeids_tilstand, egenøkonomi, politikk, demokrati, 
+                regjering, livet, trygghet, innvandrere_bosetting, innvandrere)
+
+saveRDS(reduced_data, "reduced_data.rds")
+
+reduced_data <- readRDS("reduced_data.rds")
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Regresjonsmodell og analyse
+# Tenker at det er best å ha med to forskjellige modeller
 
 rsa <- lm(tillit_stortinget ~ utdanning + inntekt + gift_samboer + mann + 
             borgerskap + aldersgruppe + arbeids_tilstand + egenøkonomi +
             politikk + demokrati + regjering + livet + trygghet +
-            innvandrere_bosetting + innvandrere, data = rdf)
+            innvandrere_bosetting + innvandrere, data = reduced_data)
 
 summary(rsa)
 
