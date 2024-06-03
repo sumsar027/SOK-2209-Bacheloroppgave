@@ -35,6 +35,143 @@ library(naniar)# for NA https://cran.r-project.org/web/packages/naniar/vignettes
 
 ################################################################################
 
+
+############################ Regioner i Norge ##################################
+
+# https://www.ssb.no/statbank/table/09817/tableViewLayout1/
+
+# henter datasettet ved bruk av api spørring
+url1 <- "https://data.ssb.no/api/v0/no/table/09817/"
+
+data <- '{
+  "query": [
+    {
+      "code": "Region",
+      "selection": {
+        "filter": "vs:FylkerAlle",
+        "values": [
+          "31",
+          "32",
+          "30",
+          "01",
+          "02",
+          "03",
+          "34",
+          "04",
+          "05",
+          "33",
+          "06",
+          "39",
+          "40",
+          "38",
+          "07",
+          "08",
+          "42",
+          "09",
+          "10",
+          "11",
+          "46",
+          "12",
+          "13",
+          "14",
+          "15",
+          "50",
+          "16",
+          "17",
+          "18",
+          "55",
+          "56",
+          "54",
+          "19",
+          "20",
+          "21",
+          "22",
+          "23",
+          "25",
+          "26",
+          "88",
+          "99"
+        ]
+      }
+    },
+    {
+      "code": "InnvandrKat",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "B"
+        ]
+      }
+    },
+    {
+      "code": "Landbakgrunn",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "999"
+        ]
+      }
+    },
+    {
+      "code": "ContentsCode",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "AndelBefolkning"
+        ]
+      }
+    },
+    {
+      "code": "Tid",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "2023"
+        ]
+      }
+    }
+  ],
+  "response": {
+    "format": "json-stat2"
+  }
+}'
+
+
+d.tmp <- POST(url1 , body = data, encode = "json", verbose())
+
+ssbinnvandring1 <- fromJSONstat(content(d.tmp, "text"))
+
+# fjerner kolonner
+ssbinnvandring1 <- ssbinnvandring1[, -c(2, 3, 4, 5)]
+
+# endrer navn på regionene
+nye_navn <- c("Viken", "Vestfold og Telemark", "Trøndelag", 
+              "Nordland", "Troms og Finmark")
+rad_indekser <- c(3, 14, 26, 29, 32)
+ssbinnvandring1$region[rad_indekser] <- nye_navn
+
+# fjerner rader med verdien 0
+ssbinnvandring1 <- ssbinnvandring1[ssbinnvandring1$value != 0, ]
+
+# definerer fargeskala 
+color_scale <- scale_fill_gradient(low = "deepskyblue", high = "darkblue")
+
+# lager barplot
+ggplot(data = ssbinnvandring1, aes(x = region, y = value, fill = value)) +
+  geom_bar(stat = "identity") +
+  color_scale + # legger til fargeskalaen
+  labs(x = "Region", y = "Andel innvandrere", 
+       title = "Andel innvandrere av total populasjon i norske regioner", 
+       subtitle = "År 2023", 
+       caption = "Kilde: https://www.ssb.no/statbank/table/09817/tableViewLayout1/") + # legger til navn og titler
+  scale_y_continuous(limits = c(0, 30),labels = function(x) paste0(x, "%")) + #legger til prosent på y aksen
+  geom_text(aes(label = value), 
+            position = position_dodge(width = 5), 
+            vjust = 0) + # legger til tall for hver bar
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) #Snur tekst og sentrerer titler
+
 ############################ Innvandring #######################################
 
 # innvandring over tid
